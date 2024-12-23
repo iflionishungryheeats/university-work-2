@@ -1,5 +1,5 @@
 # АНАЛИЗ ДАННЫХ И ИСКУССТВЕННЫЙ ИНТЕЛЛЕКТ [in GameDev]
-Отчет по лабораторной работе #1 выполнил(а):
+Отчет по лабораторной работе #2 выполнил(а):
 - Шалагинов Лев Александрович
 - НМТ-232206
 Отметка о выполнении заданий (заполняется студентом):
@@ -50,84 +50,174 @@
 
 -Схема экономической модели в игре.
 
-```py
+-Роль здоровья в экономической модели: так как потеря здоровья приводит к поражения, задача игрока этого не допустить, для данной цели он должен использовать прокачку и монеты для покупки более сильного оружия и патронов. Если игрок будет игнорировать эти траты, то он достаточно быстро проиграет, из чего можно сделать вывод, что здоровье играет ключевую роль в экономической модели и мотивирует игрока пользоваться всеми ресурсами.
 
-In [ ]:
-#Import the required modules, numpy for calculation, and Matplotlib for drawing
-import numpy as np
-import matplotlib.pyplot as plt
-#This code is for jupyter Notebook only
-%matplotlib inline
+![1](https://github.com/user-attachments/assets/853797a5-65b1-447d-aed5-9297a650ef58)
 
-# define data, and change list to array
-x = [3,21,22,34,54,34,55,67,89,99]
-x = np.array(x)
-y = [2,22,24,65,79,82,55,130,150,199]
-y = np.array(y)
 
-#Show the effect of a scatter plot
-plt.scatter(x,y)
-
-```
-
-- Определите связанные функции. Функция модели: определяет модель линейной регрессии wx+b. Функция потерь: функция потерь среднеквадратичной ошибки. Функция оптимизации: метод градиентного спуска для нахождения частных производных w и b.
 
 
 ## Задание 2
-### Должна ли величина loss стремиться к нулю при изменении исходных данных? Ответьте на вопрос, приведите пример выполнения кода, который подтверждает ваш ответ.
+### С помощью скрипта на языке Python заполните google-таблицу данными, описывающими выбранную игровую переменную в игре “СПАСТИ РТФ:Выживание”. Средствами google-sheets визуализируйте данные в google-таблице (постройте график / диаграмму и пр.) для наглядного представления выбранной игровой величины. Опишите характер изменения этой величины, опишите недостатки в реализации этой величины (например, в игре может произойти условие наступления эксплойта) и предложите до 3-х вариантов модификации условий работы с переменной, чтобы сделать игровой опыт лучше.
 
-- Перечисленные в этом туториале действия могут быть выполнены запуском на исполнение скрипт-файла, доступного [в репозитории](https://github.com/Den1sovDm1triy/hfss-scripting/blob/main/ScreatingSphereInAEDT.py).
-- Для запуска скрипт-файла откройте Ansys Electronics Desktop. Перейдите во вкладку [Automation] - [Run Script] - [Выберите файл с именем ScreatingSphereInAEDT.py из репозитория].
+Ход работы:
+- Для визуализации игровой переменной рассмотрим следующую модель: игрок каждый раунд теряет по (номер раунда * 3) единиц здоровья. Каждый 3-й раунд он прокачивает вампиризм и во время раунда восстанавливает (уровень навыка * 10) здоровья. Каждый 4-й раунд игрок прокачивает регенерацию и во время раунда восстанавливает (уровень навыка * 5) здоровья. И каждый 5-й раунд игрок прокачивает своё максимальное здоровье на +10.
+- Скрипт на языке Python:
 
 ```py
+import gspread
+import numpy as np
 
-import ScriptEnv
-ScriptEnv.Initialize("Ansoft.ElectronicsDesktop")
-oDesktop.RestoreWindow()
-oProject = oDesktop.NewProject()
-oProject.Rename("C:/Users/denisov.dv/Documents/Ansoft/SphereDIffraction.aedt", True)
-oProject.InsertDesign("HFSS", "HFSSDesign1", "HFSS Terminal Network", "")
-oDesign = oProject.SetActiveDesign("HFSSDesign1")
-oEditor = oDesign.SetActiveEditor("3D Modeler")
-oEditor.CreateSphere(
-	[
-		"NAME:SphereParameters",
-		"XCenter:="		, "0mm",
-		"YCenter:="		, "0mm",
-		"ZCenter:="		, "0mm",
-		"Radius:="		, "1.0770329614269mm"
-	], 
-)
+gc = gspread.service_account(filename='unityproject-445110-838179c75a17.json')
+sh = gc.open('UnityWorkshop#2')
+worksheet = sh.sheet1
+sh.sheet1.clear() 
+
+damage = 3
+vampirism = 10
+vampirism_LVL = 0
+regeneration = 5
+regeneration_LVL = 0
+current_HP = 30
+max_HP = 30
+up_HP = 10
+total_rounds = 20
+
+row = 1
+sh.sheet1.update_acell('A' + str(row), 'Раунд')
+sh.sheet1.update_acell('B' + str(row), 'HP')
+
+for round_number in range(total_rounds):
+    row += 1
+    current_HP += -damage*(round_number+1) + vampirism*vampirism_LVL + regeneration*regeneration_LVL
+
+    if((round_number+1) % 3 == 0):
+        vampirism_LVL += 1
+    if((round_number+1) % 4 == 0):
+        regeneration_LVL += 1
+    if((round_number+1) % 5 == 0):
+        max_HP += 10
+
+    if(current_HP < 0):
+        current_HP = 0
+    if(current_HP > max_HP):
+        current_HP = max_HP
+    print(vampirism_LVL, regeneration_LVL, max_HP, -damage*round_number + vampirism*vampirism_LVL + regeneration*regeneration_LVL)
+    sh.sheet1.update_acell('A' + str(row), str(round_number+1))
+    sh.sheet1.update_acell('B' + str(row), str(current_HP))
+
+
 
 ```
+
+![2](https://github.com/user-attachments/assets/568552d5-0ada-4a29-8e33-b3011865c362)
+
+- Как видно из визуализации в начале игроку предоставляется испытание, но чем дальше идёт прокачка, тем легче для него становятся уровни. Это происходит из-за того, что угроза почти не меняется, в то время, как игрок становиться всё сильнее и сильнее. Чтобы это исправить можно добавить новых противников, тем самым заставляя игрока тратить больше здоровья, а значит держать в напряжении. Кроме этого можно добавить возможность обмена здоровья на монеты или улучшения. Также добавление различных модификаторов для локации, которые наносили бы периодический урон, повысило бы ценность здоровья.
 
 ## Задание 3
-### Какова роль параметра Lr? Ответьте на вопрос, приведите пример выполнения кода, который подтверждает ваш ответ. В качестве эксперимента можете изменить значение параметра.
+### Настройте на сцене Unity воспроизведение звуковых файлов, описывающих динамику изменения выбранной переменной. Например, если выбрано здоровье главного персонажа вы можете выводить сообщения, связанные с его состоянием.
 
-- Перечисленные в этом туториале действия могут быть выполнены запуском на исполнение скрипт-файла, доступного [в репозитории](https://github.com/Den1sovDm1triy/hfss-scripting/blob/main/ScreatingSphereInAEDT.py).
-- Для запуска скрипт-файла откройте Ansys Electronics Desktop. Перейдите во вкладку [Automation] - [Run Script] - [Выберите файл с именем ScreatingSphereInAEDT.py из репозитория].
+Ход работы:
+
+- Будем выводить звук основываясь на значении здоровья. До 10 - плохо, от 10 до 30 нормально, от 30 хорошо.
+- Скрипт для Unity на языке C#:
 
 ```py
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+using SimpleJSON;
 
-import ScriptEnv
-ScriptEnv.Initialize("Ansoft.ElectronicsDesktop")
-oDesktop.RestoreWindow()
-oProject = oDesktop.NewProject()
-oProject.Rename("C:/Users/denisov.dv/Documents/Ansoft/SphereDIffraction.aedt", True)
-oProject.InsertDesign("HFSS", "HFSSDesign1", "HFSS Terminal Network", "")
-oDesign = oProject.SetActiveDesign("HFSSDesign1")
-oEditor = oDesign.SetActiveEditor("3D Modeler")
-oEditor.CreateSphere(
-	[
-		"NAME:SphereParameters",
-		"XCenter:="		, "0mm",
-		"YCenter:="		, "0mm",
-		"ZCenter:="		, "0mm",
-		"Radius:="		, "1.0770329614269mm"
-	], 
-)
+public class NewBehaviourScript : MonoBehaviour
+{
+    public AudioClip goodSpeak;
+    public AudioClip normalSpeak;
+    public AudioClip badSpeak;
+    private AudioSource selectAudio;
+    private Dictionary<string, float> dataSet = new Dictionary<string, float>();
+    private bool statusStart = false;
+    private int i = 1;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        StartCoroutine(GoogleSheets());
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (dataSet["Mon_" + i.ToString()] <= 10 & statusStart == false & i != dataSet.Count)
+        {
+            StartCoroutine(PlaySelectAudioBad());
+            Debug.Log(dataSet["Mon_" + i.ToString()]);
+        }
+
+        if (dataSet["Mon_" + i.ToString()] > 10 & dataSet["Mon_" + i.ToString()] <= 30 & statusStart == false & i != dataSet.Count)
+        {
+            StartCoroutine(PlaySelectAudioNormal());
+            Debug.Log(dataSet["Mon_" + i.ToString()]);
+        }
+
+        if (dataSet["Mon_" + i.ToString()] > 30 & statusStart == false & i != dataSet.Count)
+        {
+            StartCoroutine(PlaySelectAudioGood());
+            Debug.Log(dataSet["Mon_" + i.ToString()]);
+        }
+    }
+
+    IEnumerator GoogleSheets()
+    {
+        UnityWebRequest curentResp = UnityWebRequest.Get("https://docs.google.com/spreadsheets/d/1V4DjZxm0NwRWnqOCSSQN02Kn_mZUsIlK7_IPKNNHvZQ/edit?gid=0#gid=0");
+        yield return curentResp.SendWebRequest();
+        string rawResp = curentResp.downloadHandler.text;
+        var rawJson = JSON.Parse(rawResp);
+        foreach (var itemRawJson in rawJson["values"])
+        {
+            
+            var parseJson = JSON.Parse(itemRawJson.ToString());
+            var selectRow = parseJson[0].AsStringList;
+
+            dataSet.Add(("Mon_" + selectRow[0]), float.Parse(selectRow[2]));
+        }
+    }
+
+    IEnumerator PlaySelectAudioGood()
+    {
+        statusStart = true;
+        selectAudio = GetComponent<AudioSource>();
+        selectAudio.clip = goodSpeak;
+        selectAudio.Play();
+        yield return new WaitForSeconds(3);
+        statusStart = false;
+        i++;
+    }
+    IEnumerator PlaySelectAudioNormal()
+    {
+        statusStart = true;
+        selectAudio = GetComponent<AudioSource>();
+        selectAudio.clip = normalSpeak;
+        selectAudio.Play();
+        yield return new WaitForSeconds(3);
+        statusStart = false;
+        i++;
+    }
+    IEnumerator PlaySelectAudioBad()
+    {
+        statusStart = true;
+        selectAudio = GetComponent<AudioSource>();
+        selectAudio.clip = badSpeak;
+        selectAudio.Play();
+        yield return new WaitForSeconds(4);
+        statusStart = false;
+        i++;
+    }
+}
 
 ```
+
+
 
 ## Выводы
 
